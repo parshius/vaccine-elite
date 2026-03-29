@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase-browser";
+import Navbar from "@/components/Navbar";
 
 const vaccineOptions = [
   "BCG",
@@ -43,9 +44,7 @@ export default function VaccinationsPage() {
         .select("id, full_name")
         .order("full_name", { ascending: true });
 
-      if (!error && data) {
-        setChildren(data);
-      }
+      if (!error && data) setChildren(data);
     };
 
     fetchChildren();
@@ -93,16 +92,14 @@ export default function VaccinationsPage() {
   const handleVaccineChange = (selectedVaccine: string) => {
     setVaccineName(selectedVaccine);
     if (dateGiven) {
-      const autoDate = calculateNextDueDate(selectedVaccine, dateGiven);
-      setNextDueDate(autoDate);
+      setNextDueDate(calculateNextDueDate(selectedVaccine, dateGiven));
     }
   };
 
-  const handleDateGivenChange = (selectedDate: string) => {
+  const handleDateChange = (selectedDate: string) => {
     setDateGiven(selectedDate);
     if (vaccineName) {
-      const autoDate = calculateNextDueDate(vaccineName, selectedDate);
-      setNextDueDate(autoDate);
+      setNextDueDate(calculateNextDueDate(vaccineName, selectedDate));
     }
   };
 
@@ -133,78 +130,82 @@ export default function VaccinationsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 p-6">
-      <div className="mx-auto max-w-2xl rounded-3xl bg-white p-8 shadow-xl">
-        <h1 className="text-3xl font-bold text-slate-800">Vaccination Entry</h1>
-        <p className="mt-2 text-slate-600">
-          Record a child’s vaccine information with automatic next-dose support.
-        </p>
+    <main className="min-h-screen bg-slate-50">
+      <Navbar />
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <select
-            value={childName}
-            onChange={(e) => setChildName(e.target.value)}
-            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none"
-            required
-          >
-            <option value="">Select Child</option>
-            {children.map((child) => (
-              <option key={child.id} value={child.full_name}>
-                {child.full_name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={vaccineName}
-            onChange={(e) => handleVaccineChange(e.target.value)}
-            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none"
-            required
-          >
-            <option value="">Select Vaccine</option>
-            {vaccineOptions.map((vaccine) => (
-              <option key={vaccine} value={vaccine}>
-                {vaccine}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="date"
-            value={dateGiven}
-            onChange={(e) => handleDateGivenChange(e.target.value)}
-            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none"
-            required
-          />
-
-          <input
-            type="date"
-            value={nextDueDate}
-            onChange={(e) => setNextDueDate(e.target.value)}
-            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none"
-          />
-
-          <textarea
-            placeholder="Notes"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none"
-            rows={4}
-          />
-
-          <button
-            type="submit"
-            className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-white font-semibold hover:bg-emerald-700"
-          >
-            Save Vaccination
-          </button>
-        </form>
-
-        {message && (
-          <p className="mt-4 rounded-xl bg-slate-100 p-3 text-sm text-slate-700">
-            {message}
+      <div className="p-6">
+        <div className="mx-auto max-w-2xl rounded-3xl bg-white p-8 shadow-xl">
+          <h1 className="text-3xl font-bold text-slate-800">Vaccination Entry</h1>
+          <p className="mt-2 text-slate-600">
+            Record a vaccine and automatically calculate the next dose.
           </p>
-        )}
+
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <select
+              value={childName}
+              onChange={(e) => setChildName(e.target.value)}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500"
+              required
+            >
+              <option value="">Select Child</option>
+              {children.map((child) => (
+                <option key={child.id} value={child.full_name}>
+                  {child.full_name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={vaccineName}
+              onChange={(e) => handleVaccineChange(e.target.value)}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500"
+              required
+            >
+              <option value="">Select Vaccine</option>
+              {vaccineOptions.map((vaccine) => (
+                <option key={vaccine} value={vaccine}>
+                  {vaccine}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="date"
+              value={dateGiven}
+              onChange={(e) => handleDateChange(e.target.value)}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500"
+              required
+            />
+
+            <input
+              type="date"
+              value={nextDueDate}
+              onChange={(e) => setNextDueDate(e.target.value)}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500"
+            />
+
+            <textarea
+              placeholder="Clinical Notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={4}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500"
+            />
+
+            <button
+              type="submit"
+              className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-white font-semibold hover:bg-emerald-700"
+            >
+              Save Vaccination
+            </button>
+          </form>
+
+          {message && (
+            <p className="mt-4 rounded-xl bg-slate-100 p-3 text-sm text-slate-700">
+              {message}
+            </p>
+          )}
+        </div>
       </div>
     </main>
   );

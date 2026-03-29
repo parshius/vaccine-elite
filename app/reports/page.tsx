@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase-browser";
+import Navbar from "@/components/Navbar";
 
 export default function ReportsPage() {
   const [totalChildren, setTotalChildren] = useState(0);
@@ -44,46 +45,42 @@ export default function ReportsPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-slate-50 p-6">
-      <div className="mx-auto max-w-6xl rounded-3xl bg-white p-8 shadow-xl">
-        <h1 className="text-3xl font-bold text-slate-800">Reports & Insights</h1>
-        <p className="mt-2 text-slate-600">
-          View totals, summaries, and follow-up insights.
-        </p>
+    <main className="min-h-screen bg-slate-50">
+      <Navbar />
 
-        {loading ? (
-          <p className="mt-6 text-slate-600">Loading reports...</p>
-        ) : (
-          <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-3xl bg-emerald-50 p-6 shadow">
-              <h2 className="text-lg font-semibold text-slate-700">Total Children</h2>
-              <p className="mt-3 text-4xl font-bold text-emerald-700">
-                {totalChildren}
-              </p>
-            </div>
+      <div className="p-6">
+        <div className="mx-auto max-w-6xl rounded-3xl bg-white p-8 shadow-xl">
+          <h1 className="text-3xl font-bold text-slate-800">Reports & Insights</h1>
+          <p className="mt-2 text-slate-600">
+            View clinic totals and immunization follow-up data.
+          </p>
 
-            <div className="rounded-3xl bg-blue-50 p-6 shadow">
-              <h2 className="text-lg font-semibold text-slate-700">Total Vaccinations</h2>
-              <p className="mt-3 text-4xl font-bold text-blue-700">
-                {totalVaccinations}
-              </p>
-            </div>
+          {loading ? (
+            <p className="mt-6 text-slate-600">Loading reports...</p>
+          ) : (
+            <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-3xl bg-emerald-50 p-6 shadow">
+                <h2 className="text-lg font-semibold text-slate-700">Total Children</h2>
+                <p className="mt-3 text-4xl font-bold text-emerald-700">{totalChildren}</p>
+              </div>
 
-            <div className="rounded-3xl bg-yellow-50 p-6 shadow">
-              <h2 className="text-lg font-semibold text-slate-700">Upcoming Reminders</h2>
-              <p className="mt-3 text-4xl font-bold text-yellow-700">
-                {upcomingCount}
-              </p>
-            </div>
+              <div className="rounded-3xl bg-blue-50 p-6 shadow">
+                <h2 className="text-lg font-semibold text-slate-700">Total Vaccinations</h2>
+                <p className="mt-3 text-4xl font-bold text-blue-700">{totalVaccinations}</p>
+              </div>
 
-            <div className="rounded-3xl bg-red-50 p-6 shadow">
-              <h2 className="text-lg font-semibold text-slate-700">Overdue Vaccines</h2>
-              <p className="mt-3 text-4xl font-bold text-red-700">
-                {overdueCount}
-              </p>
+              <div className="rounded-3xl bg-yellow-50 p-6 shadow">
+                <h2 className="text-lg font-semibold text-slate-700">Upcoming Reminders</h2>
+                <p className="mt-3 text-4xl font-bold text-yellow-700">{upcomingCount}</p>
+              </div>
+
+              <div className="rounded-3xl bg-red-50 p-6 shadow">
+                <h2 className="text-lg font-semibold text-slate-700">Overdue Vaccines</h2>
+                <p className="mt-3 text-4xl font-bold text-red-700">{overdueCount}</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </main>
   );
