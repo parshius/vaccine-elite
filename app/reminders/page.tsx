@@ -1,107 +1,100 @@
-import { createClient } from "@/lib/supabase/server";
+"use client";
 
-export default async function RemindersPage() {
-  const supabase = await createClient();
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase-browser";
 
-  const { data: vaccinations } = await supabase
-    .from("vaccinations")
-    .select(`
-      *,
-      children (
-        full_name,
-        clinic_name,
-        county
-      )
-    `)
-    .order("next_due_date", { ascending: true });
+type Reminder = {
+  id: string;
+  child_name: string;
+  vaccine_name: string;
+  next_due_date: string;
+};
 
-  const today = new Date();
+export default function RemindersPage() {
+  const [upcoming, setUpcoming] = useState<Reminder[]>([]);
+  const [overdue, setOverdue] = useState<Reminder[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const upcoming =
-    vaccinations?.filter((item) => {
-      if (!item.next_due_date) return false;
-      return new Date(item.next_due_date) >= today;
-    }) || [];
+  useEffect(() => {
+    const fetchReminders = async () => {
+      const today = new Date().toISOString().split("T")[0];
 
-  const overdue =
-    vaccinations?.filter((item) => {
-      if (!item.next_due_date) return false;
-      return new Date(item.next_due_date) < today;
-    }) || [];
+      const { data, error } = await supabase
+        .from("vaccinations")
+        .select("*")
+        .not("next_due_date", "is", null)
+        .order("next_due_date", { ascending: true });
+
+      if (!error && data) {
+        const upcomingVaccines = data.filter(
+          (item) => item.next_due_date >= today
+        );
+
+        const overdueVaccines = data.filter(
+          (item) => item.next_due_date < today
+        );
+
+        setUpcoming(upcomingVaccines);
+        setOverdue(overdueVaccines);
+      }
+
+      setLoading(false);
+    };
+
+    fetchReminders();
+  }, []);
 
   return (
     <main className="min-h-screen bg-slate-50 p-6">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="rounded-3xl bg-white p-8 shadow-sm">
-          <h1 className="text-3xl font-bold">Vaccine Reminders</h1>
-          <p className="mt-2 text-slate-600">
-            Upcoming and overdue vaccine follow-ups.
-          </p>
-        </div>
+      <div className="mx-auto max-w-6xl rounded-3xl bg-white p-8 shadow-xl">
+        <h1 className="text-3xl font-bold text-slate-800">Vaccination Reminders</h1>
+        <p className="mt-2 text-slate-600">
+          Track upcoming and overdue vaccinations.
+        </p>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="rounded-3xl bg-white p-8 shadow-sm">
-            <h2 className="text-2xl font-bold text-emerald-700">
-              Upcoming Vaccines
-            </h2>
+        {loading ? (
+          <p className="mt-6 text-slate-600">Loading reminders...</p>
+        ) : (
+          <div className="mt-8 grid gap-8 md:grid-cols-2">
+            <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6">
+              <h2 className="text-2xl font-bold text-emerald-700">Upcoming</h2>
+              {upcoming.length === 0 ? (
+                <p className="mt-4 text-slate-600">No upcoming vaccines.</p>
+              ) : (
+                <div className="mt-4 space-y-4">
+                  {upcoming.map((item) => (
+                    <div key={item.id} className="rounded-2xl bg-white p-4 shadow">
+                      <p className="font-semibold text-slate-800">{item.child_name}</p>
+                      <p className="text-slate-600">{item.vaccine_name}</p>
+                      <p className="text-sm text-emerald-700">
+                        Due: {item.next_due_date}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-            {upcoming.length === 0 ? (
-              <div className="mt-6 rounded-2xl bg-emerald-50 p-4 text-emerald-700">
-                No upcoming vaccines.
-              </div>
-            ) : (
-              <div className="mt-6 space-y-4">
-                {upcoming.map((item) => (
-                  <div key={item.id} className="rounded-2xl bg-emerald-50 p-4">
-                    <p className="font-semibold">
-                      {item.children?.full_name || "Unknown Child"}
-                    </p>
-                    <p className="text-sm text-slate-600">
-                      Vaccine: {item.vaccine_name}
-                    </p>
-                    <p className="text-sm text-slate-600">
-                      Due: {item.next_due_date}
-                    </p>
-                    <p className="text-sm text-slate-600">
-                      Clinic: {item.children?.clinic_name}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="rounded-3xl border border-red-200 bg-red-50 p-6">
+              <h2 className="text-2xl font-bold text-red-700">Overdue</h2>
+              {overdue.length === 0 ? (
+                <p className="mt-4 text-slate-600">No overdue vaccines.</p>
+              ) : (
+                <div className="mt-4 space-y-4">
+                  {overdue.map((item) => (
+                    <div key={item.id} className="rounded-2xl bg-white p-4 shadow">
+                      <p className="font-semibold text-slate-800">{item.child_name}</p>
+                      <p className="text-slate-600">{item.vaccine_name}</p>
+                      <p className="text-sm text-red-700">
+                        Due: {item.next_due_date}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-
-          <div className="rounded-3xl bg-white p-8 shadow-sm">
-            <h2 className="text-2xl font-bold text-red-700">
-              Overdue Vaccines
-            </h2>
-
-            {overdue.length === 0 ? (
-              <div className="mt-6 rounded-2xl bg-red-50 p-4 text-red-700">
-                No overdue vaccines.
-              </div>
-            ) : (
-              <div className="mt-6 space-y-4">
-                {overdue.map((item) => (
-                  <div key={item.id} className="rounded-2xl bg-red-50 p-4">
-                    <p className="font-semibold">
-                      {item.children?.full_name || "Unknown Child"}
-                    </p>
-                    <p className="text-sm text-slate-600">
-                      Vaccine: {item.vaccine_name}
-                    </p>
-                    <p className="text-sm text-slate-600">
-                      Due: {item.next_due_date}
-                    </p>
-                    <p className="text-sm text-slate-600">
-                      Clinic: {item.children?.clinic_name}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </main>
   );

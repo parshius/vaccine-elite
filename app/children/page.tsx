@@ -1,137 +1,108 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase-browser";
 
 export default function ChildrenPage() {
-  const supabase = createClient();
-
-  const [form, setForm] = useState({
-    full_name: "",
-    date_of_birth: "",
-    sex: "",
-    birth_weight: "",
-    clinic_name: "",
-    county: "",
-    allergies: "",
-    medical_notes: "",
-  });
-
-  const [loading, setLoading] = useState(false);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const [fullName, setFullName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [gender, setGender] = useState("");
+  const [parentName, setParentName] = useState("");
+  const [parentPhone, setParentPhone] = useState("");
+  const [message, setMessage] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setMessage("Saving child record...");
 
-    const { error } = await supabase.from("children").insert([form]);
-
-    setLoading(false);
+    const { error } = await supabase.from("children").insert([
+      {
+        full_name: fullName,
+        date_of_birth: dateOfBirth,
+        gender,
+        parent_name: parentName,
+        parent_phone: parentPhone,
+      },
+    ]);
 
     if (error) {
-      alert("Error saving child record: " + error.message);
-      return;
+      setMessage(error.message);
+    } else {
+      setMessage("Child record saved successfully!");
+      setFullName("");
+      setDateOfBirth("");
+      setGender("");
+      setParentName("");
+      setParentPhone("");
     }
-
-    alert("Child record saved successfully!");
-
-    setForm({
-      full_name: "",
-      date_of_birth: "",
-      sex: "",
-      birth_weight: "",
-      clinic_name: "",
-      county: "",
-      allergies: "",
-      medical_notes: "",
-    });
   };
 
   return (
     <main className="min-h-screen bg-slate-50 p-6">
-      <div className="mx-auto max-w-3xl rounded-3xl bg-white p-8 shadow-sm">
-        <h1 className="text-3xl font-bold">Register Child</h1>
-        <p className="mt-2 text-slate-600">
-          Add a child into the Vaccine Elite system.
-        </p>
+      <div className="mx-auto max-w-2xl rounded-3xl bg-white p-8 shadow-xl">
+        <h1 className="text-3xl font-bold text-slate-800">Add Child</h1>
+        <p className="mt-2 text-slate-600">Register a child into Vaccine Elite.</p>
 
-        <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <input
-            name="full_name"
-            value={form.full_name}
-            onChange={handleChange}
+            type="text"
             placeholder="Child Full Name"
-            className="rounded-2xl border border-slate-300 px-4 py-3"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none"
+            required
           />
 
           <input
-            name="date_of_birth"
-            value={form.date_of_birth}
-            onChange={handleChange}
             type="date"
-            className="rounded-2xl border border-slate-300 px-4 py-3"
+            value={dateOfBirth}
+            onChange={(e) => setDateOfBirth(e.target.value)}
+            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none"
+            required
+          />
+
+          <select
+            value={gender}
+            onChange={(e) => setGender(e.target.value)}
+            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none"
+            required
+          >
+            <option value="">Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+
+          <input
+            type="text"
+            placeholder="Parent/Guardian Name"
+            value={parentName}
+            onChange={(e) => setParentName(e.target.value)}
+            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none"
+            required
           />
 
           <input
-            name="sex"
-            value={form.sex}
-            onChange={handleChange}
-            placeholder="Sex"
-            className="rounded-2xl border border-slate-300 px-4 py-3"
-          />
-
-          <input
-            name="birth_weight"
-            value={form.birth_weight}
-            onChange={handleChange}
-            placeholder="Birth Weight"
-            className="rounded-2xl border border-slate-300 px-4 py-3"
-          />
-
-          <input
-            name="clinic_name"
-            value={form.clinic_name}
-            onChange={handleChange}
-            placeholder="Clinic Name"
-            className="rounded-2xl border border-slate-300 px-4 py-3"
-          />
-
-          <input
-            name="county"
-            value={form.county}
-            onChange={handleChange}
-            placeholder="County"
-            className="rounded-2xl border border-slate-300 px-4 py-3"
-          />
-
-          <input
-            name="allergies"
-            value={form.allergies}
-            onChange={handleChange}
-            placeholder="Allergies"
-            className="rounded-2xl border border-slate-300 px-4 py-3"
-          />
-
-          <textarea
-            name="medical_notes"
-            value={form.medical_notes}
-            onChange={handleChange}
-            placeholder="Medical Notes"
-            className="rounded-2xl border border-slate-300 px-4 py-3"
+            type="text"
+            placeholder="Parent Phone Number"
+            value={parentPhone}
+            onChange={(e) => setParentPhone(e.target.value)}
+            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none"
+            required
           />
 
           <button
-            disabled={loading}
-            className="rounded-2xl bg-emerald-600 px-6 py-3 text-white hover:bg-emerald-700 disabled:opacity-50"
+            type="submit"
+            className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-white font-semibold hover:bg-emerald-700"
           >
-            {loading ? "Saving..." : "Save Child Record"}
+            Save Child
           </button>
         </form>
+
+        {message && (
+          <p className="mt-4 rounded-xl bg-slate-100 p-3 text-sm text-slate-700">
+            {message}
+          </p>
+        )}
       </div>
     </main>
   );

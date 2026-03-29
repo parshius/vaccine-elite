@@ -1,7 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase-browser";
+
+const vaccineOptions = [
+  "BCG",
+  "OPV 0",
+  "OPV 1",
+  "OPV 2",
+  "OPV 3",
+  "Pentavalent 1",
+  "Pentavalent 2",
+  "Pentavalent 3",
+  "PCV 1",
+  "PCV 2",
+  "PCV 3",
+  "Rotavirus 1",
+  "Rotavirus 2",
+  "Measles-Rubella",
+  "Yellow Fever",
+  "Vitamin A",
+];
 
 type Child = {
   id: string;
@@ -9,27 +28,20 @@ type Child = {
 };
 
 export default function VaccinationsPage() {
-  const supabase = createClient();
-
   const [children, setChildren] = useState<Child[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const [form, setForm] = useState({
-    child_id: "",
-    vaccine_name: "",
-    dose_number: "",
-    date_given: "",
-    next_due_date: "",
-    clinician_name: "",
-    notes: "",
-  });
+  const [childName, setChildName] = useState("");
+  const [vaccineName, setVaccineName] = useState("");
+  const [dateGiven, setDateGiven] = useState("");
+  const [nextDueDate, setNextDueDate] = useState("");
+  const [notes, setNotes] = useState("");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     const fetchChildren = async () => {
       const { data, error } = await supabase
         .from("children")
         .select("id, full_name")
-        .order("created_at", { ascending: false });
+        .order("full_name", { ascending: true });
 
       if (!error && data) {
         setChildren(data);
@@ -39,124 +51,160 @@ export default function VaccinationsPage() {
     fetchChildren();
   }, []);
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const calculateNextDueDate = (vaccine: string, date: string) => {
+    if (!date) return "";
+
+    const baseDate = new Date(date);
+
+    const addDays = (days: number) => {
+      const newDate = new Date(baseDate);
+      newDate.setDate(newDate.getDate() + days);
+      return newDate.toISOString().split("T")[0];
+    };
+
+    switch (vaccine) {
+      case "BCG":
+      case "OPV 0":
+        return "";
+      case "OPV 1":
+      case "Pentavalent 1":
+      case "PCV 1":
+      case "Rotavirus 1":
+        return addDays(28);
+      case "OPV 2":
+      case "Pentavalent 2":
+      case "PCV 2":
+        return addDays(28);
+      case "OPV 3":
+      case "Pentavalent 3":
+      case "PCV 3":
+      case "Rotavirus 2":
+        return addDays(180);
+      case "Measles-Rubella":
+        return addDays(270);
+      case "Yellow Fever":
+      case "Vitamin A":
+        return addDays(180);
+      default:
+        return "";
+    }
+  };
+
+  const handleVaccineChange = (selectedVaccine: string) => {
+    setVaccineName(selectedVaccine);
+    if (dateGiven) {
+      const autoDate = calculateNextDueDate(selectedVaccine, dateGiven);
+      setNextDueDate(autoDate);
+    }
+  };
+
+  const handleDateGivenChange = (selectedDate: string) => {
+    setDateGiven(selectedDate);
+    if (vaccineName) {
+      const autoDate = calculateNextDueDate(vaccineName, selectedDate);
+      setNextDueDate(autoDate);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setMessage("Saving vaccination...");
 
-    const payload = {
-      ...form,
-      dose_number: form.dose_number ? Number(form.dose_number) : null,
-    };
-
-    const { error } = await supabase.from("vaccinations").insert([payload]);
-
-    setLoading(false);
+    const { error } = await supabase.from("vaccinations").insert([
+      {
+        child_name: childName,
+        vaccine_name: vaccineName,
+        date_given: dateGiven,
+        next_due_date: nextDueDate || null,
+        notes,
+      },
+    ]);
 
     if (error) {
-      alert("Error saving vaccination: " + error.message);
-      return;
+      setMessage(error.message);
+    } else {
+      setMessage("Vaccination saved successfully!");
+      setChildName("");
+      setVaccineName("");
+      setDateGiven("");
+      setNextDueDate("");
+      setNotes("");
     }
-
-    alert("Vaccination record saved successfully!");
-
-    setForm({
-      child_id: "",
-      vaccine_name: "",
-      dose_number: "",
-      date_given: "",
-      next_due_date: "",
-      clinician_name: "",
-      notes: "",
-    });
   };
 
   return (
     <main className="min-h-screen bg-slate-50 p-6">
-      <div className="mx-auto max-w-3xl rounded-3xl bg-white p-8 shadow-sm">
-        <h1 className="text-3xl font-bold">Vaccination Record</h1>
+      <div className="mx-auto max-w-2xl rounded-3xl bg-white p-8 shadow-xl">
+        <h1 className="text-3xl font-bold text-slate-800">Vaccination Entry</h1>
         <p className="mt-2 text-slate-600">
-          Record a vaccine given to a child.
+          Record a child’s vaccine information with automatic next-dose support.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <select
-            name="child_id"
-            value={form.child_id}
-            onChange={handleChange}
-            className="rounded-2xl border border-slate-300 px-4 py-3"
+            value={childName}
+            onChange={(e) => setChildName(e.target.value)}
+            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none"
+            required
           >
             <option value="">Select Child</option>
             {children.map((child) => (
-              <option key={child.id} value={child.id}>
+              <option key={child.id} value={child.full_name}>
                 {child.full_name}
               </option>
             ))}
           </select>
 
-          <input
-            name="vaccine_name"
-            value={form.vaccine_name}
-            onChange={handleChange}
-            placeholder="Vaccine Name (e.g. BCG, OPV, Pentavalent)"
-            className="rounded-2xl border border-slate-300 px-4 py-3"
-          />
+          <select
+            value={vaccineName}
+            onChange={(e) => handleVaccineChange(e.target.value)}
+            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none"
+            required
+          >
+            <option value="">Select Vaccine</option>
+            {vaccineOptions.map((vaccine) => (
+              <option key={vaccine} value={vaccine}>
+                {vaccine}
+              </option>
+            ))}
+          </select>
 
           <input
-            name="dose_number"
-            value={form.dose_number}
-            onChange={handleChange}
-            placeholder="Dose Number"
-            type="number"
-            className="rounded-2xl border border-slate-300 px-4 py-3"
-          />
-
-          <input
-            name="date_given"
-            value={form.date_given}
-            onChange={handleChange}
             type="date"
-            className="rounded-2xl border border-slate-300 px-4 py-3"
+            value={dateGiven}
+            onChange={(e) => handleDateGivenChange(e.target.value)}
+            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none"
+            required
           />
 
           <input
-            name="next_due_date"
-            value={form.next_due_date}
-            onChange={handleChange}
             type="date"
-            className="rounded-2xl border border-slate-300 px-4 py-3"
-          />
-
-          <input
-            name="clinician_name"
-            value={form.clinician_name}
-            onChange={handleChange}
-            placeholder="Clinician / Doctor Name"
-            className="rounded-2xl border border-slate-300 px-4 py-3"
+            value={nextDueDate}
+            onChange={(e) => setNextDueDate(e.target.value)}
+            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none"
           />
 
           <textarea
-            name="notes"
-            value={form.notes}
-            onChange={handleChange}
             placeholder="Notes"
-            className="rounded-2xl border border-slate-300 px-4 py-3"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none"
+            rows={4}
           />
 
           <button
-            disabled={loading}
-            className="rounded-2xl bg-emerald-600 px-6 py-3 text-white hover:bg-emerald-700 disabled:opacity-50"
+            type="submit"
+            className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-white font-semibold hover:bg-emerald-700"
           >
-            {loading ? "Saving..." : "Save Vaccination"}
+            Save Vaccination
           </button>
         </form>
+
+        {message && (
+          <p className="mt-4 rounded-xl bg-slate-100 p-3 text-sm text-slate-700">
+            {message}
+          </p>
+        )}
       </div>
     </main>
   );
